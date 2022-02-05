@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<module>
+	<grants>
+	</grants>
+	<actions>
+		<!-- 관리자 액션 -->
+		<action name="dispEvoteAdminConfig" type="view" menu_name="evote" admin_index="true" />
+		<action name="procEvoteAdminInsertConfig" type="controller" />
+		<!-- 일반 액션 -->
+		<action name="dispEvoteIndex" type="view" index="true" />
+	</actions>
+	<menus>
+		<menu name="evote" type="all">
+			<title xml:lang="ko">추천 제한</title>
+		</menu>
+	</menus>
+</module>

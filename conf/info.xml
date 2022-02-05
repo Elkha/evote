@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="0.2">
+	<title xml:lang="ko">추천 제한</title>
+	<description xml:lang="ko">게시판 별 문서, 댓글의 추천 제한</description>
+	<version>1.0.0</version>
+	<date>2022-02-06</date>
+	<category>service</category>
+	<author email_address="m@elkha.kr" link="http://elkha.kr/">
+		<name xml:lang="ko">엘카</name>
+	</author>
+</module>
