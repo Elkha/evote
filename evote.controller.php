@@ -24,7 +24,7 @@ class EvoteController extends Evote
 			if($val->document_srl==$obj->document_srl)
 			{
 				$type = $obj->point < 0? 'doc2' : 'doc';
-				$cache_key = 'object_' . $type . '_' . $obj->document_srl . '_' . $logged_info->member_srl;
+				$cache_key = 'object_' . $type . $logged_info->member_srl;
 				$cache_val = (array)$this->_get($cache_key);
 				$args = new stdClass();
 				$args->member_srl = abs($obj->member_srl);
@@ -50,7 +50,7 @@ class EvoteController extends Evote
 	public function triggerBeforeVoteDocument($obj)
 	{
 		$type = $obj->point < 0? 'doc2' : 'doc';
-		$output = $this->_check($obj->document_srl, abs($obj->member_srl), $obj->module_srl, 'doc');
+		$output = $this->_check(abs($obj->member_srl), $obj->module_srl, 'doc');
 		if(!$output->toBool())
 		{
 			return $output;
@@ -96,14 +96,14 @@ class EvoteController extends Evote
 	public function triggerBeforeVoteComment($obj)
 	{
 		$type = $obj->point < 0? 'cmt2' : 'cmt';
-		$output = $this->_check($obj->comment_srl, abs($obj->member_srl), $obj->module_srl, $type);
+		$output = $this->_check(abs($obj->member_srl), $obj->module_srl, $type);
 		if(!$output->toBool())
 		{
 			return $output;
 		}
 		$this->cmt_cache[] = $obj;
 	}
-	protected function _check(int $target_srl, int $author_member_srl, int $module_srl, $prefix)
+	protected function _check(int $author_member_srl, int $module_srl, $prefix)
 	{
 		$logged_info = Context::get('logged_info');
 		if(!is_object($logged_info) || !$logged_info->member_srl)
@@ -116,7 +116,7 @@ class EvoteController extends Evote
 
 		$type = strpos($prefix, 'doc')===0? 'doc' : 'cmt';
 		$do = $type==$prefix? '추천' : '비추';
-		$cache_key = 'object_' . $prefix . '_' . $target_srl . '_' . $logged_info->member_srl;
+		$cache_key = 'object_' . $prefix . $logged_info->member_srl;
 		$cache_val = (array)$this->_get($cache_key);
 		$config = $this->getConfig();
 
@@ -174,7 +174,8 @@ class EvoteController extends Evote
 						$count_modules[$k]++;
 						if($v[2] <= $count_modules[$k])
 						{
-							return $this->createObject(-1, '이 게시판에 ' . ceil($term_modules[$k] / 60) . " 분 후 $do 할 수 있습니다.");
+							$term = ceil($term_modules[$k] / 60) >= 60? round($term_modules[$k] / 3600) . ' 시간' : ceil($term_modules[$k] / 60) . ' 분';
+							return $this->createObject(-1, "이 게시판에 $term 후 $do 할 수 있습니다.");
 						}
 					}
 				}
@@ -182,11 +183,13 @@ class EvoteController extends Evote
 		}
 		if(isset($config->{$prefix.'_counts_MEM'}) && $config->{$prefix.'_counts_MEM'} <= $count_MEM)
 		{
-			return $this->createObject(-1, '이 회원에게 ' . ceil($term_MEM / 60) . " 분 후 $do 할 수 있습니다.");
+			$term = ceil($term_MEM / 60) >= 60? round($term_MEM/3600) . ' 시간' : ceil($term_MEM / 60) . ' 분';
+			return $this->createObject(-1, "이 회원에게 $term 후 $do 할 수 있습니다.");
 		}
 		if(isset($config->{$prefix.'_counts_ALL'}) && $config->{$prefix.'_counts_ALL'} <= $count_ALL)
 		{
-			return $this->createObject(-1, ceil($term_ALL / 60) . " 분 후 $do 할 수 있습니다.");
+			$term = ceil($term_ALL / 60) >= 60? round($term_ALL/3600) . ' 시간' : ceil($term_ALL / 60) . ' 분';
+			return $this->createObject(-1, "$term 후 $do 할 수 있습니다.");
 		}
 		return $this->createObject();
 	}
