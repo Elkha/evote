@@ -9,18 +9,195 @@
  */
 class EvoteController extends Evote
 {
+	var $doc_cache = array();
+	var $cmt_cache = array();
 	public function triggerAfterVoteDocument($obj)
 	{
+		$logged_info = Context::get('logged_info');
+		if(!is_object($logged_info) || !$logged_info->member_srl)
+		{
+			return $this->createObject();
+		}
+		$config = $this->getConfig();
+		foreach($this->doc_cache as $val)
+		{
+			if($val->document_srl==$obj->document_srl)
+			{
+				$type = $obj->point < 0? 'doc2' : 'doc';
+				$cache_key = 'object_' . $type . '_' . $obj->document_srl . '_' . $logged_info->member_srl;
+				$cache_val = (array)$this->_get($cache_key);
+				$args = new stdClass();
+				$args->member_srl = abs($obj->member_srl);
+				$args->time = time();
+				$args->module_srl = $val->module_srl;
+
+				if(isset($config->cache_expire))
+				{
+					foreach($cache_val as $k => $v)
+					{
+						if(time() - $config->cache_expire < $v->time)
+						{
+							continue;
+						}
+						unset($cache_val[$k]);
+					}
+				}
+				$cache_val[] = $args;
+				$this->_put($cache_key, $cache_val);
+			}
+		}
 	}
 	public function triggerBeforeVoteDocument($obj)
 	{
+		$type = $obj->point < 0? 'doc2' : 'doc';
+		$output = $this->_check($obj->document_srl, abs($obj->member_srl), $obj->module_srl, 'doc');
+		if(!$output->toBool())
+		{
+			return $output;
+		}
+		$this->doc_cache[] = $obj;
 	}
 	public function triggerAfterVoteComment($obj)
 	{
 	}
 	public function triggerBeforeVoteComment($obj)
 	{
+		$type = $obj->point < 0? 'cmt2' : 'cmt';
+		$output = $this->_check($obj->document_srl, abs($obj->member_srl), $obj->module_srl, $type);
+		if(!$output->toBool())
+		{
+			return $output;
+		}
+		$this->doc_cache[] = $obj;
 	}
+	protected function _check(int $target_srl, int $author_member_srl, int $module_srl, $prefix)
+	{
+		$logged_info = Context::get('logged_info');
+		if(!is_object($logged_info) || !$logged_info->member_srl)
+		{
+			return $this->createObject();
+		}
+
+		$oModuleModel = getModel('module');
+		$module_info = $oModuleModel->getModuleInfoByModuleSrl($module_srl);
+
+		$type = strpos($prefix, 'doc')===0? 'doc' : 'cmt';
+		$do = $type==$prefix? '추천' : '비추';
+		$cache_key = 'object_' . $prefix . '_' . $target_srl . '_' . $logged_info->member_srl;
+		$cache_val = (array)$this->_get($cache_key);
+		$config = $this->getConfig();
+
+		$count_ALL = 0;
+		$term_ALL = 0;
+		$count_MEM = 0;
+		$term_MEM = 0;
+		$count_modules = array();
+		$term_modules = array();
+
+		foreach($cache_val as $val)
+		{
+			if(($_term = time() - $config->{$prefix.'_minutes_ALL'} * 60 - $val->time) <= 0)
+			{
+				if($term_ALL < abs($_term))
+				{
+					$term_ALL = abs($_term);
+				}
+				$count_ALL++;
+			}
+			if($author_member_srl && $val->member_srl==$author_member_srl && ($_term = time() - $config->{$prefix.'_minutes_MEM'} * 60 - $val->time) <= 0)
+			{
+				if($term_MEM < abs($_term))
+				{
+					$term_MEM = abs($_term);
+				}
+				$count_MEM++;
+			}
+			if($val->module_srl==$module_info->module_srl && isset($config->{$type.'_modules'}))
+			{
+				foreach($config->{$type.'_modules'} as $k => $v)
+				{
+					if($v[3]=='Y' && !preg_match($v[0], $module_info->mid))
+					{
+						continue;
+					}
+					if($v[3]!='Y' && $v[0]!=$module_info->mid)
+					{
+						continue;
+					}
+					if(($_term = time() - $v[1] * 60 - $val->time) <= 0)
+					{
+						if(!isset($term_modules[$k]))
+						{
+							$term_modules[$k] = 0;
+						}
+						if(!isset($count_modules[$k]))
+						{
+							$count_modules[$k] = 0;
+						}
+						if($term_modules[$k] < abs($_term))
+						{
+							$term_modules[$k] = abs($_term);
+						}
+						$count_modules[$k]++;
+						if($v[2] <= $count_modules[$k])
+						{
+							return $this->createObject(-1, '이 게시판에 ' . ceil($term_modules[$k] / 60) . " 분 후 $do 할 수 있습니다.");
+						}
+					}
+				}
+			}
+		}
+		if(isset($config->{$prefix.'_counts_MEM'}) && $config->{$prefix.'_counts_MEM'} <= $count_MEM)
+		{
+			return $this->createObject(-1, '이 회원에게 ' . ceil($term_MEM / 60) . " 분 후 $do 할 수 있습니다.");
+		}
+		if(isset($config->{$prefix.'_counts_ALL'}) && $config->{$prefix.'_counts_ALL'} <= $count_ALL)
+		{
+			return $this->createObject(-1, ceil($term_ALL / 60) . " 분 후 $do 할 수 있습니다.");
+		}
+		return $this->createObject();
+	}
+	protected function _put($cache_key, $cache_val)
+	{
+		$config = $this->getConfig();
+		if(!isset($config->cache_expire))
+		{
+			return;
+		}
+		$oCacheHandler = CacheHandler::getInstance();
+		if($oCacheHandler->isSupport())
+		{
+			$this->setCache($cache_key, $cache_val, $config->cache_expire);
+		}
+		else
+		{
+			FileHandler::writeFile("files/cache/evote/$cache_key.php", '<'.'?php exit; ?>' . json_encode($cache_val));
+		}
+	}
+	protected function _get($cache_key)
+	{
+		$config = $this->getConfig();
+		if(!isset($config->cache_expire))
+		{
+			return new stdClass();
+		}
+		$oCacheHandler = CacheHandler::getInstance();
+		if($oCacheHandler->isSupport())
+		{
+			$cache_val = $this->getCache($cache_key);
+			if(is_object($cache_val) || is_array($cache_val))
+			{
+				return $cache_val;
+			}
+		}
+		// use file cache
+		else if(file_exists(_XE_PATH_ . ($filename = "files/cache/evote/$cache_key.php")))
+		{
+			return json_decode(str_replace('<'.'?php exit; ?>', '', FileHandler::readFile($filename)));
+		}
+		return NULL;
+	}
+
 	/**
 	 * 트리거 예제: 새 글 작성시 실행
 	 *

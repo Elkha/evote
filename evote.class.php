@@ -14,10 +14,10 @@ class Evote extends ModuleObject
 	 * checkUpdate(), moduleUpdate() 등에서 체크 및 생성 루틴을 중복으로 작성하지 않아도 된다.
 	 */
 	protected static $_insert_triggers = array(
-		array('document.updateVotedCount', 'before', 'controller', 'triggerAfterVoteDocument'),
-		array('document.updateVotedCount', 'after', 'controller', 'triggerBeforeVoteDocument'),
-		array('comment.updateVotedCount', 'before', 'controller', 'triggerAfterVoteComment'),
-		array('comment.updateVotedCount', 'after', 'controller', 'triggerBeforeVoteComment'),
+		array('document.updateVotedCount', 'before', 'controller', 'triggerBeforeVoteDocument'),
+		array('document.updateVotedCount', 'after', 'controller', 'triggerAfterVoteDocument'),
+		array('comment.updateVotedCount', 'before', 'controller', 'triggerBeforeVoteComment'),
+		array('comment.updateVotedCount', 'after', 'controller', 'triggerAfterVoteComment'),
 		// array('document.insertDocument', 'after', 'controller', 'triggerAfterInsertDocument'),
 		// array('document.updateDocument', 'after', 'controller', 'triggerAfterUpdateDocument'),
 		// array('document.deleteDocument', 'after', 'controller', 'triggerAfterDeleteDocument'),

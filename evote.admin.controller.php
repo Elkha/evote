@@ -17,6 +17,7 @@ class EvoteAdminController extends Evote
 		// 현재 설정 상태 불러오기
 		//$config = $this->getConfig();
 		$config = new stdClass();
+		$cache_expire = array();
 
 		// 제출받은 데이터 불러오기
 		$vars = Context::getRequestVars();
@@ -33,6 +34,10 @@ class EvoteAdminController extends Evote
 			if(isset($vars->{$val}))
 			{
 				$config->{$val} = (INT)$vars->{$val};
+				if(strpos($val, '_minutes_')!==FALSE)
+				{
+					$cache_expire[] = ((INT)$vars->{$val}) * 60;
+				}
 				unset($vars->{$val});
 			}
 		}
@@ -51,9 +56,24 @@ class EvoteAdminController extends Evote
 						$mid = htmlspecialchars(strip_tags($vars->{$v."_mid_$i"})); // security
 						// mid, minutes, counts, Y
 						$config->{$v.'_modules'}[] = array($mid, (INT)$val, (INT)$vars->{$v."_counts_$i"}, $regex);
+
+						$cache_expire[] = ((INT)$val) * 60;
 					}
 				}
 			}
+			// memory 확보
+			if(!count($config->{$v.'_modules'}))
+			{
+				unset($config->{$v.'_modules'});
+			}
+		}
+		if(count($cache_expire))
+		{
+			$config->cache_expire = max($cache_expire);
+		}
+		if(!isset($config->cache_expire) || $config->cache_expire <= 0)
+		{
+			$config->cache_expire = 86400;
 		}
 
 		// 변경된 설정을 저장

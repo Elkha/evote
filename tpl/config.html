@@ -1,5 +1,4 @@
 <load target="config.js" />
-
 <form class="x_form-horizontal" action="./" method="post" id="evote">
 	<input type="hidden" name="module" value="evote" />
 	<input type="hidden" name="act" value="procEvoteAdminInsertConfig" />
@@ -154,7 +153,20 @@
 	</section>
 
 
+	<section class="section">
+		<h2>캐시 만료</h2>
+		<p>위 설정의 최대 시간이 자동으로 적용됩니다.</p>
+		<input type="number" value="{$evote_config->cache_expire}" disabled="disabled" />
+	</section>
+
 	<div class="btnArea x_clearfix">
 		<button type="submit" class="x_btn x_btn-primary x_pull-right">{$lang->cmd_registration}</button>
 	</div>
+
 </form>
+
+<h2>정규식 도움말</h2>
+<ul>
+<li>test 문자로 게시판을 지정하려면 ^test 입력하고 정규식에 체크합니다.</li>
+<li>hello, hi 게시판을 지정하려면 ^(hello|hi)$ 입력하고 정규식에 체크합니다.</li>
+</ul>
