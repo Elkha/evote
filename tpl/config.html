@@ -1,38 +1,160 @@
-<load target="css/config.css" />
-<load target="js/config.js" />
-
-<div class="x_page-header">
-	<h1>{$lang->cmd_evote}</h1>
-</div>
-
-<ul class="x_nav x_nav-tabs">
-	<li class="x_active"|cond="$act == 'dispEvoteAdminConfig'"><a href="{getUrl('', 'module', 'admin', 'act', 'dispEvoteAdminConfig')}">{$lang->cmd_evote_general_config}</a></li>
-</ul>
+<load target="config.js" />
 
 <form class="x_form-horizontal" action="./" method="post" id="evote">
 	<input type="hidden" name="module" value="evote" />
 	<input type="hidden" name="act" value="procEvoteAdminInsertConfig" />
 	<input type="hidden" name="success_return_url" value="{getRequestUriByServerEnviroment()}" />
 	<input type="hidden" name="xe_validator_id" value="modules/evote/tpl/config/1" />
-	
+
 	<div class="message {$XE_VALIDATOR_MESSAGE_TYPE}" cond="$XE_VALIDATOR_MESSAGE && $XE_VALIDATOR_ID == 'modules/evote/tpl/config/1'">
 		<p>{$XE_VALIDATOR_MESSAGE}</p>
 	</div>
-	
+
 	<section class="section">
-		<div class="x_control-group">
-			<label class="x_control-label" for="example_config">{$lang->cmd_evote_example_config}</label>
-			<div class="x_controls">
-				<select name="example_config" id="example_config">
-					<option value="Y" selected="selected"|cond="$evote_config->example_config !== 'N'">{$lang->cmd_yes}</option>
-					<option value="N" selected="selected"|cond="$evote_config->example_config === 'N'">{$lang->cmd_no}</option>
-				</select>
-			</div>
-		</div>
+		<h2>각 회원은 [문서] 추천에 대하여 아래 제한을 받습니다.</h2>
+		<ul>
+		<li>
+			<input name="doc_minutes_ALL" type="number" value="{$evote_config->doc_minutes_ALL}" style="width:50px;" />
+			분 동안 추천 수 합
+			<input name="doc_counts_ALL" type="number" value="{$evote_config->doc_counts_ALL}" style="width:50px;" />
+			까지 제한 (예: 1440분(=24시간) 동안 20개)
+		</li>
+		{@
+		if(!isset($evote_config->doc_modules) || !is_array($evote_config->doc_modules))
+			$evote_config->doc_modules = array();
+		$evote_config->doc_modules[] = array('','','','');
+		$i = 0;
+		}
+		<li loop="$evote_config->doc_modules=>$key,$val">
+			<input name="doc_minutes_{$key}" type="number" value="{$val[1]}" style="width:50px;" />
+			분 동안 모듈(=mid)
+			<input name="doc_mid_{$key}" type="text" value="{$val[0]}" style="width:100px;" />
+			에 한해 추천 수 합
+			<input name="doc_counts_{$key}" type="number" value="{$val[2]}" style="width:50px;" />
+			개 까지 제한 (예: 24시간 동안 5개) / 모듈(=mid) 값이 정규식
+			<input type="checkbox" name="doc_regex_{$key}" value="Y" checked="checked"|cond="$val[3]=='Y'" id="doc_regex_{$key}" />
+			{@ $i++; }
+			<div cond="$i==count($evote_config->doc_modules)"><button type="button" onclick="evote_modules_copy(this, 'doc_');" data-modules="{$key}">항목 추가</button></div>
+		</li>
+		<li>
+			<input name="doc_minutes_MEM" type="number" value="{$evote_config->doc_minutes_MEM}" style="width:50px;" />
+			분 동안 회원 x 에게 추천 수 합
+			<input name="doc_counts_MEM" type="number" value="{$evote_config->doc_counts_MEM}" style="width:50px;" />
+			개 까지 제한 (예: 24시간 동안 3개)
+		</li>
+		</ul>
 	</section>
-	
+
+
+	<section class="section">
+		<h2>각 회원은 [댓글] 추천에 대하여 아래 제한을 받습니다.</h2>
+		<ul>
+		<li>
+			<input name="cmt_minutes_ALL" type="number" value="{$evote_config->cmt_minutes_ALL}" style="width:50px;" />
+			분 동안 추천 수 합
+			<input name="cmt_counts_ALL" type="number" value="{$evote_config->cmt_counts_ALL}" style="width:50px;" />
+			까지 제한 (예: 1440분(=24시간) 동안 20개)
+		</li>
+		{@
+		if(!isset($evote_config->cmt_modules) || !is_array($evote_config->cmt_modules))
+			$evote_config->cmt_modules = array();
+		$evote_config->cmt_modules[] = array('','','','');
+		$i = 0;
+		}
+		<li loop="$evote_config->cmt_modules=>$key,$val">
+			<input name="cmt_minutes_{$key}" type="number" value="{$val[1]}" style="width:50px;" />
+			분 동안 모듈(=mid)
+			<input name="cmt_mid_{$key}" type="text" value="{$val[0]}" style="width:100px;" />
+			에 한해 추천 수 합
+			<input name="cmt_counts_{$key}" type="number" value="{$val[2]}" style="width:50px;" />
+			개 까지 제한 (예: 24시간 동안 5개) / 모듈(=mid) 값이 정규식
+			<input type="checkbox" name="cmt_regex_{$key}" value="Y" checked="checked"|cond="$val[3]=='Y'" id="cmt_regex_{$key}" />
+			{@ $i++; }
+			<div cond="$i==count($evote_config->cmt_modules)"><button type="button" onclick="evote_modules_copy(this, 'cmt_');" data-modules="{$key}">항목 추가</button></div>
+		</li>
+		<li>
+			<input name="cmt_minutes_MEM" type="number" value="{$evote_config->cmt_minutes_MEM}" style="width:50px;" />
+			분 동안 회원 x 에게 추천 수 합
+			<input name="cmt_counts_MEM" type="number" value="{$evote_config->cmt_counts_MEM}" style="width:50px;" />
+			개 까지 제한 (예: 24시간 동안 3개)
+		</li>
+		</ul>
+	</section>
+
+
+	<section class="section">
+		<h2>각 회원은 [문서] 비추에 대하여 아래 제한을 받습니다.</h2>
+		<ul>
+		<li>
+			<input name="doc2_minutes_ALL" type="number" value="{$evote_config->doc2_minutes_ALL}" style="width:50px;" />
+			분 동안 비추 수 합
+			<input name="doc2_counts_ALL" type="number" value="{$evote_config->doc2_counts_ALL}" style="width:50px;" />
+			까지 제한 (예: 1440분(=24시간) 동안 20개)
+		</li>
+		{@
+		if(!isset($evote_config->doc2_modules) || !is_array($evote_config->doc2_modules))
+			$evote_config->doc2_modules = array();
+		$evote_config->doc2_modules[] = array('','','','');
+		$i = 0;
+		}
+		<li loop="$evote_config->doc2_modules=>$key,$val">
+			<input name="doc2_minutes_{$key}" type="number" value="{$val[1]}" style="width:50px;" />
+			분 동안 모듈(=mid)
+			<input name="doc2_mid_{$key}" type="text" value="{$val[0]}" style="width:100px;" />
+			에 한해 비추 수 합
+			<input name="doc2_counts_{$key}" type="number" value="{$val[2]}" style="width:50px;" />
+			개 까지 제한 (예: 24시간 동안 5개) / 모듈(=mid) 값이 정규식
+			<input type="checkbox" name="doc2_regex_{$key}" value="Y" checked="checked"|cond="$val[3]=='Y'" id="doc2_regex_{$key}" />
+			{@ $i++; }
+			<div cond="$i==count($evote_config->doc2_modules)"><button type="button" onclick="evote_modules_copy(this, 'doc2_');" data-modules="{$key}">항목 추가</button></div>
+		</li>
+		<li>
+			<input name="doc2_minutes_MEM" type="number" value="{$evote_config->doc2_minutes_MEM}" style="width:50px;" />
+			분 동안 회원 x 에게 비추 수 합
+			<input name="doc2_counts_MEM" type="number" value="{$evote_config->doc2_counts_MEM}" style="width:50px;" />
+			개 까지 제한 (예: 24시간 동안 3개)
+		</li>
+		</ul>
+	</section>
+
+
+	<section class="section">
+		<h2>각 회원은 [댓글] 비추에 대하여 아래 제한을 받습니다.</h2>
+		<ul>
+		<li>
+			<input name="cmt2_minutes_ALL" type="number" value="{$evote_config->cmt2_minutes_ALL}" style="width:50px;" />
+			분 동안 비추 수 합
+			<input name="cmt2_counts_ALL" type="number" value="{$evote_config->cmt2_counts_ALL}" style="width:50px;" />
+			까지 제한 (예: 1440분(=24시간) 동안 20개)
+		</li>
+		{@
+		if(!isset($evote_config->cmt2_modules) || !is_array($evote_config->cmt2_modules))
+			$evote_config->cmt2_modules = array();
+		$evote_config->cmt2_modules[] = array('','','','');
+		$i = 0;
+		}
+		<li loop="$evote_config->cmt2_modules=>$key,$val">
+			<input name="cmt2_minutes_{$key}" type="number" value="{$val[1]}" style="width:50px;" />
+			분 동안 모듈(=mid)
+			<input name="cmt2_mid_{$key}" type="text" value="{$val[0]}" style="width:100px;" />
+			에 한해 비추 수 합
+			<input name="cmt2_counts_{$key}" type="number" value="{$val[2]}" style="width:50px;" />
+			개 까지 제한 (예: 24시간 동안 5개) / 모듈(=mid) 값이 정규식
+			<input type="checkbox" name="cmt2_regex_{$key}" value="Y" checked="checked"|cond="$val[3]=='Y'" id="cmt2_regex_{$key}" />
+			{@ $i++; }
+			<div cond="$i==count($evote_config->cmt2_modules)"><button type="button" onclick="evote_modules_copy(this, 'cmt2_');" data-modules="{$key}">항목 추가</button></div>
+		</li>
+		<li>
+			<input name="cmt2_minutes_MEM" type="number" value="{$evote_config->cmt2_minutes_MEM}" style="width:50px;" />
+			분 동안 회원 x 에게 비추 수 합
+			<input name="cmt2_counts_MEM" type="number" value="{$evote_config->cmt2_counts_MEM}" style="width:50px;" />
+			개 까지 제한 (예: 24시간 동안 3개)
+		</li>
+		</ul>
+	</section>
+
+
 	<div class="btnArea x_clearfix">
 		<button type="submit" class="x_btn x_btn-primary x_pull-right">{$lang->cmd_registration}</button>
 	</div>
-	
 </form>
