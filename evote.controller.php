@@ -50,7 +50,7 @@ class EvoteController extends Evote
 	public function triggerBeforeVoteDocument($obj)
 	{
 		$type = $obj->point < 0? 'doc2' : 'doc';
-		$output = $this->_check(abs($obj->member_srl), $obj->module_srl, 'doc');
+		$output = $this->_check(abs($obj->member_srl), $obj->module_srl, $type);
 		if(!$output->toBool())
 		{
 			return $output;
@@ -70,7 +70,7 @@ class EvoteController extends Evote
 			if($val->comment_srl==$obj->comment_srl)
 			{
 				$type = $obj->point < 0? 'cmt2' : 'cmt';
-				$cache_key = 'object_' . $type . '_' . $obj->comment_srl . '_' . $logged_info->member_srl;
+				$cache_key = 'object_' . $type . $logged_info->member_srl;
 				$cache_val = (array)$this->_get($cache_key);
 				$args = new stdClass();
 				$args->member_srl = abs($obj->member_srl);
@@ -145,9 +145,9 @@ class EvoteController extends Evote
 				}
 				$count_MEM++;
 			}
-			if($val->module_srl==$module_info->module_srl && isset($config->{$type.'_modules'}))
+			if($val->module_srl==$module_info->module_srl && isset($config->{$prefix.'_modules'}))
 			{
-				foreach($config->{$type.'_modules'} as $k => $v)
+				foreach($config->{$prefix.'_modules'} as $k => $v)
 				{
 					if($v[3]=='Y' && !preg_match($v[0], $module_info->mid))
 					{
