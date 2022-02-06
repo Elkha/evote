@@ -24,7 +24,7 @@ class EvoteController extends Evote
 			if($val->document_srl==$obj->document_srl)
 			{
 				$type = $obj->point < 0? 'doc2' : 'doc';
-				$cache_key = 'object_' . $type . $logged_info->member_srl;
+				$cache_key = 'object_' . $type . '_' . $logged_info->member_srl;
 				$cache_val = (array)$this->_get($cache_key);
 				$args = new stdClass();
 				$args->member_srl = abs($obj->member_srl);
@@ -70,7 +70,7 @@ class EvoteController extends Evote
 			if($val->comment_srl==$obj->comment_srl)
 			{
 				$type = $obj->point < 0? 'cmt2' : 'cmt';
-				$cache_key = 'object_' . $type . $logged_info->member_srl;
+				$cache_key = 'object_' . $type . '_' . $logged_info->member_srl;
 				$cache_val = (array)$this->_get($cache_key);
 				$args = new stdClass();
 				$args->member_srl = abs($obj->member_srl);
@@ -116,7 +116,7 @@ class EvoteController extends Evote
 
 		$type = strpos($prefix, 'doc')===0? 'doc' : 'cmt';
 		$do = $type==$prefix? '추천' : '비추';
-		$cache_key = 'object_' . $prefix . $logged_info->member_srl;
+		$cache_key = 'object_' . $prefix . '_' . $logged_info->member_srl;
 		$cache_val = (array)$this->_get($cache_key);
 		$config = $this->getConfig();
 
