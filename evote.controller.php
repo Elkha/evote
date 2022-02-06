@@ -59,16 +59,49 @@ class EvoteController extends Evote
 	}
 	public function triggerAfterVoteComment($obj)
 	{
+		$logged_info = Context::get('logged_info');
+		if(!is_object($logged_info) || !$logged_info->member_srl)
+		{
+			return $this->createObject();
+		}
+		$config = $this->getConfig();
+		foreach($this->cmt_cache as $val)
+		{
+			if($val->comment_srl==$obj->comment_srl)
+			{
+				$type = $obj->point < 0? 'cmt2' : 'cmt';
+				$cache_key = 'object_' . $type . '_' . $obj->comment_srl . '_' . $logged_info->member_srl;
+				$cache_val = (array)$this->_get($cache_key);
+				$args = new stdClass();
+				$args->member_srl = abs($obj->member_srl);
+				$args->time = time();
+				$args->module_srl = $val->module_srl;
+
+				if(isset($config->cache_expire))
+				{
+					foreach($cache_val as $k => $v)
+					{
+						if(time() - $config->cache_expire < $v->time)
+						{
+							continue;
+						}
+						unset($cache_val[$k]);
+					}
+				}
+				$cache_val[] = $args;
+				$this->_put($cache_key, $cache_val);
+			}
+		}
 	}
 	public function triggerBeforeVoteComment($obj)
 	{
 		$type = $obj->point < 0? 'cmt2' : 'cmt';
-		$output = $this->_check($obj->document_srl, abs($obj->member_srl), $obj->module_srl, $type);
+		$output = $this->_check($obj->comment_srl, abs($obj->member_srl), $obj->module_srl, $type);
 		if(!$output->toBool())
 		{
 			return $output;
 		}
-		$this->doc_cache[] = $obj;
+		$this->cmt_cache[] = $obj;
 	}
 	protected function _check(int $target_srl, int $author_member_srl, int $module_srl, $prefix)
 	{
